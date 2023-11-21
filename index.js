@@ -1,4 +1,6 @@
 import { createServer } from 'node:http';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
@@ -11,6 +13,7 @@ app.use(express.json());
 dotenv.config();
 const server = createServer(app);
 const io = new Server(server);
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 connectDB
   .authenticate()
@@ -28,18 +31,21 @@ const corsOptions = {
     if (permitedDomains.indexOf(origin) !== -1) {
       callback(null, true);
     } else {
-      callback(new Error("No permitido por CORS"));
+      callback(new Error(`No permitido por CORS: ${origin}`));
     }
   },
 };
 
 app.use(cors(corsOptions));
 app.use("/get-data", companiesRoutes);
+app.get('/chat', (req, res) => {
+  res.sendFile(join(__dirname, 'index.html'));
+});
 
-io.on('chat', (socket) => {
+io.on('connection', (socket) => {
   console.log('a user connected');
   socket.on('message', (msg) => {
-    io.emit('chat message', msg);
+    io.emit('message', msg);
   });
   socket.on('disconnect', () => {
     console.log('user disconnected');
